@@ -24,7 +24,8 @@ spec:
     spec:
       containers:
       - name: web-app
-        # This tag is updated automatically by Jenkins CI
+        # This container image tag is updated automatically by the Jenkins CI pipeline.
+        # REPLACE 'yourdockerhubusername' with your own Docker Hub registry username.
         image: docker.io/yourdockerhubusername/devops-showcase-app:1
         imagePullPolicy: Always
         ports:

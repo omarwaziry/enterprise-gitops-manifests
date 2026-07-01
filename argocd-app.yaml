@@ -11,9 +11,10 @@ spec:
   
   # Source definition pointing to the GitOps manifests repository
   source:
+    # REPLACE 'yourgithubusername/gitops-manifests-repo' with your own GitHub manifests repository (e.g. 'omarwaziry/enterprise-gitops-manifests')
     repoURL: 'https://github.com/yourgithubusername/gitops-manifests-repo.git'
     targetRevision: HEAD
-    path: . # Synchronize manifests in root of repository
+    path: . # Synchronize manifests in the root of the repository
   
   # Destination details pointing to local target cluster
   destination:
