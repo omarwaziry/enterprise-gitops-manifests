@@ -19,6 +19,10 @@ spec:
       app: devops-showcase-app
   template:
     metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/port: "8080"
       labels:
         app: devops-showcase-app
     spec:
@@ -26,7 +30,7 @@ spec:
       - name: web-app
         # This container image tag is updated automatically by the Jenkins CI pipeline.
         # REPLACE 'yourdockerhubusername' with your own Docker Hub registry username.
-        image: docker.io/yourdockerhubusername/devops-showcase-app:1
+        image: omarwazery/devops-showcase-app:24
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
