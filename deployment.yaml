@@ -25,7 +25,7 @@ spec:
       containers:
       - name: web-app
         # This tag is updated automatically by Jenkins CI
-        image: docker.io/yourdockerhubusername/devops-showcase-app:1
+        image: omarwazery/devops-showcase-app:24
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
