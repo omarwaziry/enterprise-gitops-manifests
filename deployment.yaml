@@ -1,71 +1,71 @@
-apiVersion:apps/v1
-kind:Deployment
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name:devops-showcase-app
-  namespace:production
+  name: devops-showcase-app
+  namespace: production
   labels:
-    app:devops-showcase-app
-    tier:frontend
-    managed-by:argocd
+    app: devops-showcase-app
+    tier: frontend
+    managed-by: argocd
 spec:
-  replicas:3
+  replicas: 3
   strategy:
-    type:RollingUpdate
+    type: RollingUpdate
     rollingUpdate:
-      maxSurge:1
-      maxUnavailable:0
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
-      app:devops-showcase-app
+      app: devops-showcase-app
   template:
     metadata:
       labels:
-        app:devops-showcase-app
+        app: devops-showcase-app
     spec:
       containers:
-      - name:web-app
+      - name: web-app
         # This tag is updated automatically by Jenkins CI
-        image:docker.io/yourdockerhubusername/devops-showcase-app:1
-        imagePullPolicy:Always
+        image: docker.io/yourdockerhubusername/devops-showcase-app:1
+        imagePullPolicy: Always
         ports:
-        - containerPort:8080
-          name:http
+        - containerPort: 8080
+          name: http
         
         # Resource requests & limits (important for K8s scheduler and stability)
         resources:
           requests:
-            memory:"256Mi"
-            cpu:"100m"
+            memory: "256Mi"
+            cpu: "100m"
           limits:
-            memory:"512Mi"
-            cpu:"500m"
+            memory: "512Mi"
+            cpu: "500m"
         
         # Security constraints
         securityContext:
-          allowPrivilegeEscalation:false
-          readOnlyRootFilesystem:false
-          runAsNonRoot:true
-          runAsUser:1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1000
         
         # Spring Boot Actuator health checks for self-healing
         livenessProbe:
           httpGet:
-            path:/actuator/health/liveness
-            port:8080
-          initialDelaySeconds:30
-          periodSeconds:10
-          timeoutSeconds:3
-          failureThreshold:3
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
         readinessProbe:
           httpGet:
-            path:/actuator/health/readiness
-            port:8080
-          initialDelaySeconds:20
-          periodSeconds:5
-          timeoutSeconds:3
-          failureThreshold:2
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
 ---
-apiVersion:v1
-kind:Namespace
+apiVersion: v1
+kind: Namespace
 metadata:
-  name:production
+  name: production
