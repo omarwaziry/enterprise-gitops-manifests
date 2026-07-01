@@ -3,28 +3,22 @@ kind: Application
 metadata:
   name: devops-showcase-gitops
   namespace: argocd
-  # Finalizer enables cascading deletes when application is removed
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
+
 spec:
   project: default
-  
-  # Source definition pointing to the GitOps manifests repository
+
   source:
-    repoURL: 'https://github.com/omarwaziry/enterprise-gitops-manifests.git'
-    targetRevision: HEAD
-    path: . # Synchronize manifests in root of repository
-  
-  # Destination details pointing to local target cluster
+    repoURL: https://github.com/omarwaziry/enterprise-gitops-manifests.git
+    targetRevision: main
+    path: k8s
+
   destination:
-    server: 'https://kubernetes.default.svc'
+    server: https://kubernetes.default.svc
     namespace: production
 
-  # Sync policy configuration
   syncPolicy:
     automated:
-      prune: true      # Automatically delete resources no longer present in Git
-      selfHeal: true   # Reconcile manual out-of-sync cluster changes automatically
+      prune: true
+      selfHeal: true
     syncOptions:
-      - CreateNamespace=true # Create target namespace if not exists
-      - ApplyOutOfSyncOnly=true
+      - CreateNamespace=true
