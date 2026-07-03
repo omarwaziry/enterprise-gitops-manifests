@@ -8,7 +8,7 @@
 This repository is the **CD half** of a two-repo GitOps pipeline. It contains every Kubernetes manifest needed to deploy the application and its full observability stack. Nothing in this repository is applied manually — Argo CD watches it and reconciles the cluster state to match whatever is committed here.
 
 The **CI half** (Spring Boot source, Dockerfile, Jenkinsfile) lives here:
-**[enterprise-gitops-cicd-pipeline](https://github.com/your-username/your-cicd-pipeline-repo)**
+**[enterprise-gitops-cicd-pipeline](https://github.com/omarwaziry/enterprise-gitops-cicd-pipeline)**
 
 ---
 
