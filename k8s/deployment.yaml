@@ -1,3 +1,13 @@
+# =============================================================================
+# Deployment — Application workload
+#
+# CHANGE BEFORE USE:
+#   - image: replace with your-dockerhub-username/your-app-repo
+#     The tag is updated automatically by the Jenkins pipeline on every build.
+#   - namespace: change 'production' here and in service.yaml / ingress.yaml
+#     if you want a different namespace name.
+#   - resources: tune requests/limits to match your cluster's available capacity.
+# =============================================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,71 +15,93 @@ metadata:
   namespace: production
   labels:
     app: devops-showcase-app
-    tier: frontend
-    managed-by: argocd
 spec:
+  # Run 3 replicas so the rolling update strategy can keep at least 2 pods
+  # serving traffic at all times during a deployment.
   replicas: 3
+
   strategy:
     type: RollingUpdate
     rollingUpdate:
+      # Bring one new pod up before taking any old pod down.
       maxSurge: 1
+      # Never reduce the number of available pods below the desired count.
+      # This guarantees zero downtime during updates.
       maxUnavailable: 0
+
   selector:
     matchLabels:
       app: devops-showcase-app
+
   template:
     metadata:
+      labels:
+        app: devops-showcase-app
       annotations:
+        # These annotations tell Prometheus to scrape this pod automatically
+        # when kubernetes_sd_configs annotation-based relabelling is configured.
         prometheus.io/scrape: "true"
         prometheus.io/path: "/actuator/prometheus"
         prometheus.io/port: "8080"
-      labels:
-        app: devops-showcase-app
+
     spec:
       containers:
-      - name: web-app
-        # This container image tag is updated automatically by the Jenkins CI pipeline.
-        # REPLACE 'yourdockerhubusername' with your own Docker Hub registry username.
-        image: omarwazery/devops-showcase-app:24
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8080
-          name: http
-        
-        # Resource requests & limits (important for K8s scheduler and stability)
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        
-        # Security constraints
-        securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: false
-          runAsNonRoot: true
-          runAsUser: 1000
-        
-        # Spring Boot Actuator health checks for self-healing
-        livenessProbe:
-          httpGet:
-            path: /actuator/health/liveness
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 3
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /actuator/health/readiness
-            port: 8080
-          initialDelaySeconds: 20
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 2
+        - name: app
+          # CHANGE THIS: set to your-dockerhub-username/your-app-repo
+          # The Jenkins pipeline will update the tag on every successful build.
+          image: your-dockerhub-username/your-app-repo:latest
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 8080
+
+          # Resource requests tell the Kubernetes scheduler how much capacity
+          # this pod needs to find a suitable node.
+          # Resource limits prevent this pod from starving other workloads on
+          # the same node if it has a memory leak or CPU spike.
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+          # Pod-level security constraints applied on top of the non-root user
+          # already baked into the Dockerfile.
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false  # set to true if the app writes no local files
+
+          # Spring Boot Actuator exposes separate liveness and readiness endpoints.
+          # Liveness: if this fails, Kubernetes restarts the container.
+          # Readiness: if this fails, Kubernetes stops routing traffic to this pod
+          # without restarting it (useful during startup or dependency unavailability).
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+
 ---
+# Namespace definition is co-located with the deployment for convenience.
+# Argo CD's CreateNamespace=true syncOption also handles this automatically,
+# but having it here makes 'kubectl apply -f deployment.yaml' self-contained.
 apiVersion: v1
 kind: Namespace
 metadata:

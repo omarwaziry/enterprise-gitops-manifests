@@ -1,0 +1,31 @@
+# =============================================================================
+# PodDisruptionBudget — Availability guarantee during voluntary disruptions
+#
+# A PodDisruptionBudget tells Kubernetes the minimum number of pods that
+# must remain available during voluntary disruptions — things like:
+#   - Node drains for maintenance or upgrades
+#   - Cluster autoscaler scaling down a node
+#   - Rolling updates from Argo CD
+#
+# Without this, Kubernetes could evict all 3 replicas simultaneously during
+# a node drain, causing a complete service outage.
+#
+# With minAvailable: 2, Kubernetes will only evict one pod at a time,
+# guaranteeing at least 2 pods are always serving traffic.
+#
+# CHANGE BEFORE USE:
+#   - namespace: match whatever you set in deployment.yaml
+#   - minAvailable: adjust based on your replica count. A good rule of thumb
+#     is minAvailable = replicas - 1.
+# =============================================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: devops-showcase-pdb
+  namespace: production
+spec:
+  # At least 2 pods must remain available during any voluntary disruption.
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: devops-showcase-app

@@ -1,18 +1,38 @@
+# =============================================================================
+# Ingress — External HTTP routing via NGINX Ingress Controller
+#
+# Routes requests for a specific hostname to the application Service.
+#
+# CHANGE BEFORE USE:
+#   - spec.ingressClassName: confirm your controller's class name with:
+#       kubectl get ingressclass
+#     Common values: nginx, public, traefik
+#   - rules[0].host: set to your actual domain or local hostname.
+#     For local Minikube use, add the entry to /etc/hosts:
+#       $(minikube ip)  your-app.local
+#   - namespace: match whatever you set in deployment.yaml
+#
+# NOTE: ssl-redirect is disabled here for local/dev use.
+# For a production deployment, remove that annotation and configure
+# cert-manager or provide a TLS secret under spec.tls.
+# =============================================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: devops-showcase-ingress
   namespace: production
   annotations:
-    # Use NGINX Ingress Controller
-    kubernetes.io/ingress.class: nginx
-    # Disable SSL redirection for local/dev environment demo
+    # Disable automatic HTTP → HTTPS redirect for local development.
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    # Rewrite target path to root
-    nginx.ingress.kubernetes.io/rewrite-target: /
+
 spec:
+  # ingressClassName replaces the deprecated kubernetes.io/ingress.class annotation.
+  # Run 'kubectl get ingressclass' to find the correct name for your cluster.
+  ingressClassName: nginx
+
   rules:
-    - host: devops-showcase.local
+    # CHANGE THIS: replace with your own hostname
+    - host: your-app.local
       http:
         paths:
           - path: /

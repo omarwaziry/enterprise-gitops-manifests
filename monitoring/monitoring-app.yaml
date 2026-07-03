@@ -1,3 +1,20 @@
+# =============================================================================
+# Argo CD Application — Monitoring stack
+#
+# Registers the monitoring/ directory of the manifests repository as a
+# separate Argo CD Application from the main application stack (k8s/).
+#
+# Keeping them separate means:
+#   - Monitoring config changes don't trigger an application deployment sync
+#   - Each stack has its own health status and rollback history in Argo CD
+#
+# CHANGE BEFORE USE:
+#   - spec.source.repoURL: replace with your own manifests repository URL
+#   - spec.source.targetRevision: change if your default branch is not 'main'
+#
+# Apply with:
+#   kubectl apply -f monitoring-app.yaml
+# =============================================================================
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,8 +25,10 @@ spec:
   project: default
 
   source:
-    repoURL: https://github.com/omarwaziry/enterprise-gitops-manifests.git
+    # CHANGE THIS: your manifests repository URL
+    repoURL: https://github.com/your-username/your-gitops-manifests-repo.git
     targetRevision: main
+    # Path inside the repo that contains the monitoring manifests
     path: monitoring
 
   destination:

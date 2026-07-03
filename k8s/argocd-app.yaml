@@ -1,24 +1,48 @@
+# =============================================================================
+# Argo CD Application — Application stack
+#
+# Registers the k8s/ directory of the manifests repository as an Argo CD
+# Application. Once applied, Argo CD takes over and syncs the cluster to
+# match whatever is committed to that path.
+#
+# CHANGE BEFORE USE:
+#   - spec.source.repoURL: replace with your own manifests repository URL
+#   - spec.source.targetRevision: change if your default branch is not 'main'
+#   - spec.destination.namespace: match the namespace in your deployment.yaml
+#
+# Apply with:
+#   kubectl apply -f argocd-app.yaml
+# =============================================================================
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: devops-showcase-gitops
-  namespace: argocd
+  namespace: argocd   # Argo CD always lives in the 'argocd' namespace
 
 spec:
   project: default
 
   source:
-    repoURL: https://github.com/omarwaziry/enterprise-gitops-manifests.git
+    # CHANGE THIS: your manifests repository URL
+    repoURL: https://github.com/your-username/your-gitops-manifests-repo.git
+    # Branch or tag to track
     targetRevision: main
+    # Path inside the repo that contains the application manifests
     path: k8s
 
   destination:
+    # in-cluster means Argo CD deploys to the same cluster it runs in.
+    # Replace with a remote cluster API URL if deploying to a different cluster.
     server: https://kubernetes.default.svc
     namespace: production
 
   syncPolicy:
     automated:
+      # Remove resources from the cluster that are deleted from Git.
       prune: true
+      # Revert any manual kubectl changes back to the Git state automatically.
+      # This enforces Git as the single source of truth.
       selfHeal: true
     syncOptions:
+      # Create the destination namespace if it does not exist yet.
       - CreateNamespace=true

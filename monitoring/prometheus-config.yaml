@@ -1,3 +1,18 @@
+# =============================================================================
+# Prometheus Scrape Configuration (ConfigMap)
+#
+# This ConfigMap is mounted into the Prometheus container at:
+#   /etc/prometheus/prometheus.yml
+#
+# Three scrape jobs are defined:
+#   1. prometheus  — Prometheus scrapes its own metrics (self-monitoring)
+#   2. node-exporter — Hardware and OS metrics from the Node Exporter DaemonSet
+#   3. spring-boot-app — Application metrics from the Spring Boot /actuator/prometheus endpoint
+#
+# CHANGE BEFORE USE:
+#   - spring-boot-app targets: replace 'devops-showcase-service.production' with
+#     your-service-name.your-namespace if you changed either value.
+# =============================================================================
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,16 +22,37 @@ metadata:
 data:
   prometheus.yml: |
     global:
+      # How often Prometheus scrapes each target by default.
       scrape_interval: 15s
+      # How often Prometheus evaluates alerting rules.
+      evaluation_interval: 15s
 
     scrape_configs:
 
-    - job_name: prometheus
-      static_configs:
-        - targets:
-            - localhost:9090
+      # Prometheus scrapes its own /metrics endpoint so you can monitor
+      # its own health, query latency, and scrape durations in Grafana.
+      - job_name: prometheus
+        static_configs:
+          - targets:
+              - localhost:9090
 
-    - job_name: node-exporter
-      static_configs:
-        - targets:
-            - node-exporter.monitoring.svc.cluster.local:9100
+      # Node Exporter exposes hardware-level and OS-level metrics for the
+      # underlying Kubernetes nodes (CPU, memory, disk, network).
+      # The DNS name resolves to the node-exporter Service in this namespace.
+      - job_name: node-exporter
+        static_configs:
+          - targets:
+              - node-exporter.monitoring.svc.cluster.local:9100
+
+      # Spring Boot application metrics via Micrometer + Prometheus registry.
+      # The /actuator/prometheus endpoint is exposed by adding
+      # micrometer-registry-prometheus to the application's pom.xml and
+      # setting management.endpoints.web.exposure.include=prometheus
+      # in application.properties.
+      #
+      # CHANGE THIS: replace with your-service-name.your-namespace if needed.
+      - job_name: spring-boot-app
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - devops-showcase-service.production.svc.cluster.local:80

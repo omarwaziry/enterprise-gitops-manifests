@@ -1,9 +1,23 @@
+# =============================================================================
+# Node Exporter Service
+#
+# Provides a stable DNS name for Prometheus to scrape Node Exporter pods.
+# Prometheus uses this DNS name in prometheus-config.yaml:
+#   node-exporter.monitoring.svc.cluster.local:9100
+#
+# Because Node Exporter uses hostNetwork: true, the pod's IP is the node's
+# IP. This ClusterIP Service still provides a consistent scrape target name
+# that doesn't change when pods restart or nodes are replaced.
+# =============================================================================
 apiVersion: v1
 kind: Service
 metadata:
   name: node-exporter
   namespace: monitoring
+  labels:
+    app: node-exporter
 spec:
+  type: ClusterIP
   selector:
     app: node-exporter
   ports:

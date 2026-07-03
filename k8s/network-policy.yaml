@@ -1,0 +1,70 @@
+# =============================================================================
+# NetworkPolicy — Zero-trust pod-level firewall
+#
+# By default, Kubernetes allows all pods to communicate with all other pods
+# across all namespaces. A NetworkPolicy locks this down to only the traffic
+# paths that are explicitly required.
+#
+# This policy restricts the application pods to:
+#   Ingress: accept HTTP traffic only from the NGINX Ingress Controller
+#   Egress:  allow outbound traffic only to the monitoring namespace
+#            (so Prometheus can scrape /actuator/prometheus)
+#            and to kube-dns for DNS resolution
+#
+# NOTE: NetworkPolicy enforcement requires a CNI plugin that supports it.
+# Supported CNI plugins: Calico, Cilium, Weave Net, Antrea.
+# Flannel does NOT enforce NetworkPolicies — if you use Flannel, install
+# Calico or Cilium alongside it.
+# For Minikube: run 'minikube start --cni=calico' to enable enforcement.
+#
+# CHANGE BEFORE USE:
+#   - namespace (metadata): match your application namespace
+#   - The ingress namespaceSelector label 'ingress-nginx': verify this matches
+#     your ingress controller's namespace label with:
+#       kubectl get ns --show-labels | grep ingress
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: devops-showcase-netpol
+  namespace: production
+spec:
+  podSelector:
+    matchLabels:
+      app: devops-showcase-app
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Only allow inbound traffic from pods in the ingress controller's namespace.
+    # All other traffic (including direct pod-to-pod from other namespaces) is dropped.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+
+  egress:
+    # Allow the app pods to be scraped by Prometheus in the monitoring namespace.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8080
+
+    # Allow DNS lookups so the app can resolve service names inside the cluster.
+    # Without this egress rule, DNS resolution fails and the app cannot reach
+    # any other service by name.
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

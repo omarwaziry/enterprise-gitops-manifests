@@ -1,11 +1,25 @@
+# =============================================================================
+# Prometheus Service
+#
+# Exposes Prometheus on port 9090 within the cluster.
+# Grafana uses this Service's DNS name as its datasource URL:
+#   http://prometheus-service.monitoring.svc.cluster.local:9090
+#
+# To access the Prometheus UI from your local machine:
+#   kubectl port-forward svc/prometheus-service -n monitoring 9090:9090
+# =============================================================================
 apiVersion: v1
 kind: Service
 metadata:
   name: prometheus-service
   namespace: monitoring
+  labels:
+    app: prometheus
 spec:
+  type: ClusterIP
   selector:
     app: prometheus
   ports:
-    - port: 9090
+    - name: http
+      port: 9090
       targetPort: 9090

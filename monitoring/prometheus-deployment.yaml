@@ -1,9 +1,25 @@
-
+# =============================================================================
+# Prometheus Deployment
+#
+# Runs a single Prometheus instance in the monitoring namespace.
+# The scrape config is injected via the prometheus-config ConfigMap so it
+# can be updated without rebuilding any image.
+#
+# Image is pinned to a specific version for reproducibility.
+# To upgrade, update the tag here, commit, and Argo CD will roll it out.
+#
+# NOTE: Prometheus stores its time-series database (TSDB) on the container's
+# local filesystem by default. This data is lost when the pod restarts.
+# For persistent metrics history, add a PersistentVolumeClaim mounted at
+# /prometheus and pass --storage.tsdb.path=/prometheus to the container args.
+# =============================================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prometheus
   namespace: monitoring
+  labels:
+    app: prometheus
 spec:
   replicas: 1
   selector:
@@ -16,14 +32,31 @@ spec:
     spec:
       containers:
         - name: prometheus
-          image: prom/prometheus:latest
+          # Pinned version — change this tag to upgrade Prometheus.
+          image: prom/prometheus:v2.52.0
+          args:
+            # Store TSDB data in /prometheus inside the container.
+            - "--storage.tsdb.path=/prometheus"
+            # Keep 15 days of metrics history.
+            - "--storage.tsdb.retention.time=15d"
+            # Path to the config file mounted from the ConfigMap below.
+            - "--config.file=/etc/prometheus/prometheus.yml"
           ports:
-            - containerPort: 9090
+            - name: http
+              containerPort: 9090
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
           volumeMounts:
             - name: config-volume
               mountPath: /etc/prometheus/prometheus.yml
               subPath: prometheus.yml
       volumes:
+        # Mount the prometheus.yml from the prometheus-config ConfigMap.
         - name: config-volume
           configMap:
             name: prometheus-config

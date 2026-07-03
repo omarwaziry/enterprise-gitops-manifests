@@ -1,13 +1,32 @@
+# =============================================================================
+# Grafana Service
+#
+# Exposes Grafana on NodePort 30001 so it can be accessed from a browser
+# outside the cluster during local development.
+#
+# Access URL:
+#   http://<node-ip>:30001
+#   For Minikube: http://$(minikube ip):30001
+#
+# Default credentials: admin / admin (change on first login)
+#
+# For a production deployment, switch this to ClusterIP and expose Grafana
+# through an Ingress with TLS instead of a NodePort.
+# =============================================================================
 apiVersion: v1
 kind: Service
 metadata:
   name: grafana-service
   namespace: monitoring
+  labels:
+    app: grafana
 spec:
   type: NodePort
   selector:
     app: grafana
   ports:
-    - port: 3000
+    - name: http
+      port: 3000
       targetPort: 3000
+      # Fixed NodePort so the access URL is predictable across restarts.
       nodePort: 30001

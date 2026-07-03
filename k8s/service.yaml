@@ -1,3 +1,13 @@
+# =============================================================================
+# Service — Internal cluster routing
+#
+# ClusterIP exposes the application only within the cluster.
+# External traffic reaches it exclusively through the Ingress (ingress.yaml).
+#
+# CHANGE BEFORE USE:
+#   - namespace: match whatever you set in deployment.yaml
+#   - selector.app: match the 'app' label in your deployment pod template
+# =============================================================================
 apiVersion: v1
 kind: Service
 metadata:
@@ -6,12 +16,15 @@ metadata:
   labels:
     app: devops-showcase-app
 spec:
-  # Internal service type routing traffic within the cluster namespace
   type: ClusterIP
-  ports:
-    - port: 80           # Exposed service port inside the cluster
-      targetPort: 8080   # Port on the target pod container
-      protocol: TCP
-      name: http
+
   selector:
+    # Routes traffic to pods that have this label.
+    # Must match spec.template.metadata.labels.app in deployment.yaml.
     app: devops-showcase-app
+
+  ports:
+    - name: http
+      port: 80           # Port exposed inside the cluster
+      targetPort: 8080   # Port the container listens on
+      protocol: TCP

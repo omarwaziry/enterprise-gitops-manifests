@@ -1,8 +1,25 @@
+# =============================================================================
+# Grafana Deployment
+#
+# Runs a single Grafana instance in the monitoring namespace.
+# The Prometheus datasource is provisioned automatically at startup via the
+# grafana-datasource ConfigMap, so no manual UI configuration is needed.
+#
+# Image is pinned to a specific version for reproducibility.
+# To upgrade, update the tag here, commit, and Argo CD will roll it out.
+#
+# NOTE: Grafana stores its dashboards and settings in an SQLite database
+# inside the container by default. This data is lost on pod restart.
+# For persistent dashboards, add a PersistentVolumeClaim mounted at
+# /var/lib/grafana.
+# =============================================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grafana
   namespace: monitoring
+  labels:
+    app: grafana
 spec:
   replicas: 1
   selector:
@@ -15,10 +32,21 @@ spec:
     spec:
       containers:
         - name: grafana
-          image: grafana/grafana:latest
+          # Pinned version — change this tag to upgrade Grafana.
+          image: grafana/grafana:11.1.0
           ports:
-            - containerPort: 3000
+            - name: http
+              containerPort: 3000
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
           volumeMounts:
+            # Grafana looks for datasource provisioning files in this directory
+            # at startup and registers them automatically.
             - name: datasource-volume
               mountPath: /etc/grafana/provisioning/datasources
       volumes:

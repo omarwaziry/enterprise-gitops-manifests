@@ -1,8 +1,25 @@
+# =============================================================================
+# Node Exporter DaemonSet
+#
+# Runs one Node Exporter pod on every node in the cluster.
+# Node Exporter exposes hardware and OS metrics (CPU, memory, disk I/O,
+# network, filesystem) that Prometheus scrapes on port 9100.
+#
+# hostPID, hostNetwork, and the host path volume mounts are required for
+# Node Exporter to read the actual node's system metrics rather than the
+# metrics of its own container.
+#
+# The toleration allows Node Exporter to run on control-plane nodes as well,
+# which is useful for single-node clusters like Minikube.
+# Remove the toleration if you only want to run on worker nodes.
+# =============================================================================
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: node-exporter
   namespace: monitoring
+  labels:
+    app: node-exporter
 spec:
   selector:
     matchLabels:
@@ -15,8 +32,47 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9100"
     spec:
+      # Share the host's process namespace so Node Exporter can see all
+      # processes running on the node, not just those in its container.
+      hostPID: true
+      # Share the host's network namespace so Node Exporter reports the
+      # node's actual network interface metrics.
+      hostNetwork: true
+      # Allow this DaemonSet to schedule on control-plane nodes, which
+      # have a NoSchedule taint by default.
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+
       containers:
         - name: node-exporter
-          image: prom/node-exporter:latest
+          # Pinned version — change this tag to upgrade Node Exporter.
+          image: prom/node-exporter:v1.8.1
+          args:
+            # Expose the host filesystem under /host so Node Exporter can
+            # read disk stats for the actual node volumes.
+            - "--path.rootfs=/host"
           ports:
-            - containerPort: 9100
+            - name: metrics
+              # hostNetwork is true, so this port is exposed on the node directly.
+              containerPort: 9100
+              hostPort: 9100
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+            limits:
+              memory: "64Mi"
+              cpu: "100m"
+          volumeMounts:
+            - name: host-root
+              mountPath: /host
+              readOnly: true
+              mountPropagation: HostToContainer
+
+      volumes:
+        # Mount the host's root filesystem into the container as read-only.
+        - name: host-root
+          hostPath:
+            path: /

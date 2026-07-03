@@ -1,14 +1,28 @@
+# =============================================================================
+# Grafana Datasource Provisioning (ConfigMap)
+#
+# Grafana reads YAML files from /etc/grafana/provisioning/datasources/ at
+# startup and registers the datasources automatically. This means the
+# Prometheus datasource is ready the moment the Grafana pod starts — no
+# manual configuration through the UI required.
+#
+# The Prometheus URL uses the Kubernetes internal DNS name so it resolves
+# correctly from within the cluster regardless of IP address changes.
+# =============================================================================
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-datasources
   namespace: monitoring
+
 data:
   prometheus.yaml: |-
     apiVersion: 1
     datasources:
-    - name: Prometheus
-      type: prometheus
-      url: http://prometheus-service.monitoring.svc.cluster.local:9090
-      access: proxy
-      isDefault: true
+      - name: Prometheus
+        type: prometheus
+        # Internal cluster DNS — resolves to the prometheus-service ClusterIP
+        url: http://prometheus-service.monitoring.svc.cluster.local:9090
+        access: proxy
+        isDefault: true
+        editable: false
